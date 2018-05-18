@@ -17,32 +17,54 @@ def normalize(df):
     
     return newdf
 
-def data_helper(df,time_frame):
-    number_features=len(df.columns)
+def data_helper(tsharepdf,tetfpdf,day_frame):
+    
+    number_features=5
+    pred_days=5 #predict future 5 days
+
+    '''share'''
+    StocksGroup=tsharepdf.groupby('No')
+
+    list_groups=list(StocksGroup)
+    data_days=len(list_groups[0])
+
+    OneStockFrameData=[]
+    for stock_no,OneStockdf in StocksGroup:
+        OneStock_mx=OneStockdf.as_matrix()
+        for index in range(data_days-(day_frame+pred_days)+1):
+            OneStockFrameData.append(OneStock_mx[index:index+data_days,2:8]) #"No","Date","Name","Open","High","Low","Close","Volume"     
+        OneStockFrameData=np.array(OneStockFrameData)
+        OneStockFrameData=np.reshape(OneStockFrameData,(OneStockFrameData.shape[0],OneStockFrameData.shape[1],number_features))
+        AllStockFrameData_list.append(OneStockFrameData)    
+
+    number_train=round(0.9*AllStockFrameData_list[0].shape[0])
+
+
+    '''EFT'''
+    ETFGroup=tetfpdf.groupby('No')
     
     
-    datavalue= df.as_matrix()
+    OneETFFrameData=[]
+
+    for ETF_no,OneETFdf in ETFGroup:
+        OneETF_mx=OneETFdf.as_matrix()  
+        for index in range(day_frame,data_days-pred_days+1):
+            OneETFFrameData.append(OneETF_mx[index:index+pred_days,5) #"No","Date","Name","Open","High","Low","Close","Volume"     
+        OneETFFrameData=np.array(OneETFFrameData)
+        OneETFFrameData=np.reshape(OneETFFrameData,(OneETFFrameData.shape[0],OneETFFrameData.shape[1],1))
+        AllETFFrameData_list.append(OneETFFrameData)    
     
-    result=[]
-    
-    for index in range(len(datavalue)-(time_frame+1)):
-        result.append(datavalue[index: index+(time_frame+1)])
-    
-    result = np.array(result)
-    number_train=round(0.9*result.shape[0])
-    
+      
     #train data
-    x_train=result[:int(number_train),:-1]
-    y_train=result[:int(number_train),-1][:,-1]
-    
+    x_train_list=AllStockFrameData_list[:][:int(number_train)]
+    y_train_list=AllETFFrameData_list[:][int(number_train):]
+
     #test data
-    x_test=result[int(number_train):,:-1]
-    y_test=result[int(number_train):,-1][:,-1]
-    
-    x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], number_features))
-    x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], number_features))  
-    
-    return [x_train, y_train, x_test, y_test]
+    x_test_list=AllStockFrameData_list[:][int(number_train):]
+    y_test_list=AllETFFrameData_list[:][int(number_train):]
+
+   
+    return [x_train_list, y_train_list, x_test_list, y_test_list]
 
 from keras.models import Sequential
 from keras.layers.core import Dense,Dropout,Activation
@@ -99,34 +121,7 @@ print(tsharepdf.shape)
 # print(dfs['1101'])                    
 # print(tsharepdf)
 #print(tsharepdf['Close'])
-data_days=20
-pred_days=5 #predict future 5 days
 
-input_data_list=[][]
-StocksGroup=tsharepdf.groupby('No')
-list_groups=list(StocksGroup)
-
-data_days=len(list_groups[0])
-company_num=len(StocksGroup)
-
-for index in range(data_days-(data_days+pred_days)+1):
-    for stock_no,OneStockdf in StocksGroup:
-        OneStock_mx=OneStockdf.as_matrix()
-        input_data_list.append(OneStock_mx[index:index+data_days])
-
-input_data_list = np.reshape(input_data_list,(-1,company_num,))
-number_train=round(0.9*result.shape[0])
-
-#train data
-x_train=result[:int(number_train),:-1]
-y_train=result[:int(number_train),-1][:,-1]
-
-#test data
-x_test=result[int(number_train):,:-1]
-y_test=result[int(number_train):,-1][:,-1]
-
-x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], number_features))
-x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], number_features))  
 
 '''
 close=foxconndf['Close']
