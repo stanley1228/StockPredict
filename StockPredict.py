@@ -28,40 +28,43 @@ def data_helper(tsharepdf,tetfpdf,day_frame):
     list_groups=list(StocksGroup)
     data_days=len(list_groups[0])
 
-    OneStockFrameData=[]
+    x_train_list=[]
+    x_test_list=[]
     for stock_no,OneStockdf in StocksGroup:
+        OneStockFrameData=[]
         OneStock_mx=OneStockdf.as_matrix()
         for index in range(data_days-(day_frame+pred_days)+1):
-            OneStockFrameData.append(OneStock_mx[index:index+data_days,2:8]) #"No","Date","Name","Open","High","Low","Close","Volume"     
+            OneStockFrameData.append(OneStock_mx[index:index+day_frame,2:8]) #"No","Date","Name","Open","High","Low","Close","Volume"     
         OneStockFrameData=np.array(OneStockFrameData)
         OneStockFrameData=np.reshape(OneStockFrameData,(OneStockFrameData.shape[0],OneStockFrameData.shape[1],number_features))
-        AllStockFrameData_list.append(OneStockFrameData)    
+        
+        number_train=round(0.5*OneStockFrameData[0].shape[0])
 
-    number_train=round(0.9*AllStockFrameData_list[0].shape[0])
+        #x train data
+        x_train_list.append(OneStockFrameData[:int(number_train)])   
 
+        #x test data
+        x_test_list.append(OneStockFrameData[int(number_train):])
 
-    '''EFT'''
+    '''ETF'''
     ETFGroup=tetfpdf.groupby('No')
     
-    
-    OneETFFrameData=[]
+    y_train_list=[]
+    y_test_list=[]
 
     for ETF_no,OneETFdf in ETFGroup:
+        OneETFFrameData=[]
         OneETF_mx=OneETFdf.as_matrix()  
         for index in range(day_frame,data_days-pred_days+1):
             OneETFFrameData.append(OneETF_mx[index:index+pred_days,5) #"No","Date","Name","Open","High","Low","Close","Volume"     
         OneETFFrameData=np.array(OneETFFrameData)
         OneETFFrameData=np.reshape(OneETFFrameData,(OneETFFrameData.shape[0],OneETFFrameData.shape[1],1))
-        AllETFFrameData_list.append(OneETFFrameData)    
-    
+        
+        #y train data
+        y_train_list.append(OneETFFrameData[:int(number_train)])                           
       
-    #train data
-    x_train_list=AllStockFrameData_list[:][:int(number_train)]
-    y_train_list=AllETFFrameData_list[:][int(number_train):]
-
-    #test data
-    x_test_list=AllStockFrameData_list[:][int(number_train):]
-    y_test_list=AllETFFrameData_list[:][int(number_train):]
+        #y test data
+        y_test_list.append(OneETFFrameData[int(number_train):])
 
    
     return [x_train_list, y_train_list, x_test_list, y_test_list]
