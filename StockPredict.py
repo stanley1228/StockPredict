@@ -3,6 +3,11 @@ import pandas as pd
 import numpy as np
 
 from sklearn import preprocessing
+from keras.models import Sequential
+from keras.layers.core import Dense,Dropout,Activation
+from keras.layers.recurrent  import LSTM
+# import keras
+import matplotlib.pyplot as plt 
 
 def normalize(df):
     newdf=df.copy()
@@ -23,22 +28,27 @@ def data_helper(tsharepdf,tetfpdf,day_frame):
     pred_days=5 #predict future 5 days
 
     '''share'''
+    
+    #find how many days of the data
     StocksGroup=tsharepdf.groupby('No')
-
-    list_groups=list(StocksGroup)
-    data_days=len(list_groups[0])
-
+    Group1101=StocksGroup.get_group(1101)
+    data_days=len(Group1101)
+    
     x_train_list=[]
     x_test_list=[]
     for stock_no,OneStockdf in StocksGroup:
+        if stock_no==1262:
+            stock_no=stock_no
         OneStockFrameData=[]
         OneStock_mx=OneStockdf.as_matrix()
         for index in range(data_days-(day_frame+pred_days)+1):
             OneStockFrameData.append(OneStock_mx[index:index+day_frame,2:8]) #"No","Date","Name","Open","High","Low","Close","Volume"     
         OneStockFrameData=np.array(OneStockFrameData)
+        #print(OneStockFrameData)
         OneStockFrameData=np.reshape(OneStockFrameData,(OneStockFrameData.shape[0],OneStockFrameData.shape[1],number_features))
+        #print(OneStockFrameData.shape)
         
-        number_train=round(0.5*OneStockFrameData[0].shape[0])
+        number_train=round(0.5*OneStockFrameData.shape[0])
 
         #x train data
         x_train_list.append(OneStockFrameData[:int(number_train)])   
@@ -56,7 +66,7 @@ def data_helper(tsharepdf,tetfpdf,day_frame):
         OneETFFrameData=[]
         OneETF_mx=OneETFdf.as_matrix()  
         for index in range(day_frame,data_days-pred_days+1):
-            OneETFFrameData.append(OneETF_mx[index:index+pred_days,5) #"No","Date","Name","Open","High","Low","Close","Volume"     
+            OneETFFrameData.append(OneETF_mx[index:index+pred_days,5]) #"No","Date","Name","Open","High","Low","Close","Volume"     
         OneETFFrameData=np.array(OneETFFrameData)
         OneETFFrameData=np.reshape(OneETFFrameData,(OneETFFrameData.shape[0],OneETFFrameData.shape[1],1))
         
@@ -69,10 +79,6 @@ def data_helper(tsharepdf,tetfpdf,day_frame):
    
     return [x_train_list, y_train_list, x_test_list, y_test_list]
 
-from keras.models import Sequential
-from keras.layers.core import Dense,Dropout,Activation
-from keras.layers.recurrent  import LSTM
-import keras
 
 def build_model(input_length,input_dim):
     d=0.3
@@ -101,67 +107,65 @@ def denormalize(df,norm_value):
     
     return denorm_value
 
-
-
-import matplotlib.pyplot as plt 
-tsharepdf=pd.read_csv('tsharepEnTitle.csv',encoding = 'big5',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  #nrows=100000,,verbose=True
-print(tsharepdf.shape)
-#tsharepdf.dropna(how='any',inplace=True)
-#print(tsharepdf.head())
-
-# names = tsharepdf['No'].unique().tolist()
-# print(names)
-
+def TestGroup(dfs):
+    groups=dfs.groupby('No')
+    for no,nogroup in groups:
+        print(no)
+    g1=groups.get_group('1101')
+    print(g1)
+    for name,group in groups:
+        print(group)
+    print(dfs['1101'])                    
+    print(dfs)
+    print(dfs['Close'])
     
+    close=dfs['Close']
+    plt.plot(close)
+    plt.show()
+#
+# Main entry point
+#
+def main(argv=None):
+    tsharepdf=pd.read_csv('tsharepEnTitle.csv',encoding = 'big5',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  #nrows=100000,,verbose=True
+    tetfpdf=pd.read_csv('tetfpEnTitle.csv',encoding = 'big5',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  
+    
+    '''
+    tsharepdf_norm=normalize(tsharepdf)
+    tetfpdf_norm=normalize(tetfpdf)
+    '''
+    
+    x_train, y_train, x_test, y_test = data_helper(tsharepdf,tetfpdf, 20)
+   
+    ''' 
+    model=build_model(20,5)
+    model.fit(x_train, y_train, batch_size=128,epochs=50,validation_split=0.1,verbose=1)
+    
+    pred_train=model.predict(x_train)
+    denorm_pred_train=denormalize(tsharepdf,pred_train)
+    denorm_ytest_train=denormalize(tetfpdf,y_train)
+    
+    pred=model.predict(x_test)
+    denorm_pred=denormalize(tsharepdf,pred)
+    denorm_ytest=denormalize(tetfpdf,y_test)
+    
+    
+    plt.figure(1)
+    plt.plot(denorm_pred_train,color='red',label='Prediction')
+    plt.plot(denorm_ytest_train,color='blue',label='Answer')
+    plt.legend(loc='best')
+    
+    plt.figure(2)
+    plt.plot(denorm_pred,color='red',label='Prediction')
+    plt.plot(denorm_ytest,color='blue',label='Answer')
+    plt.legend(loc='best')
+    plt.show()
+    
+    #print(tsmcdf_norm)
+    #close=tsmcdf['Close']
+    #close.plot()
+    #plt.plot(close)
+    #plt.show()
+    '''
 
-# groups=tsharepdf.groupby('No')
-# for no,nogroup in groups:
-#     print(no)
-# g1=groups.get_group('1101')
-# print(g1)
-# for name,group in groups:
-#     print(group)
-# print(dfs['1101'])                    
-# print(tsharepdf)
-#print(tsharepdf['Close'])
-
-
-'''
-close=foxconndf['Close']
-plt.plot(close)
-plt.show()
-
-
-foxconndf_norm=normalize(tsharepdf)
-model=build_model(20,5)
-  
-x_train, y_train, x_test, y_test = data_helper(foxconndf_norm, 20)
- 
-model.fit(x_train, y_train, batch_size=128,epochs=50,validation_split=0.1,verbose=1)
-
-pred_train=model.predict(x_train)
-denorm_pred_train=denormalize(foxconndf,pred_train)
-denorm_ytest_train=denormalize(foxconndf,y_train)
-
-pred=model.predict(x_test)
-denorm_pred=denormalize(foxconndf,pred)
-denorm_ytest=denormalize(foxconndf,y_test)
-
-
-plt.figure(1)
-plt.plot(denorm_pred_train,color='red',label='Prediction')
-plt.plot(denorm_ytest_train,color='blue',label='Answer')
-plt.legend(loc='best')
-
-plt.figure(2)
-plt.plot(denorm_pred,color='red',label='Prediction')
-plt.plot(denorm_ytest,color='blue',label='Answer')
-plt.legend(loc='best')
-plt.show()
-
-#print(tsmcdf_norm)
-#close=tsmcdf['Close']
-#close.plot()
-#plt.plot(close)
-#plt.show()
-'''
+if __name__ == '__main__':
+    main()
