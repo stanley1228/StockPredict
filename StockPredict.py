@@ -33,12 +33,14 @@ def data_helper(tsharepdf,tetfpdf,day_frame):
     StocksGroup=tsharepdf.groupby('No')
     Group1101=StocksGroup.get_group(1101)
     data_days=len(Group1101)
-    
+
     x_train_list=[]
     x_test_list=[]
     for stock_no,OneStockdf in StocksGroup:
-        if stock_no==1262:
-            stock_no=stock_no
+        if stock_no==1102:
+            break
+        if len(OneStockdf) != data_days:
+            continue
         OneStockFrameData=[]
         OneStock_mx=OneStockdf.as_matrix()
         for index in range(data_days-(day_frame+pred_days)+1):
@@ -65,7 +67,12 @@ def data_helper(tsharepdf,tetfpdf,day_frame):
     for ETF_no,OneETFdf in ETFGroup:
         OneETFFrameData=[]
         OneETF_mx=OneETFdf.as_matrix()  
-        for index in range(day_frame,data_days-pred_days+1):
+#         if ETF_no==690:
+#             ETF_no=ETF_no
+        if len(OneETFdf) < data_days:
+            zero_m=np.zeros(len(OneStockdf)-data_days,OneETF_mx.shape[1])
+            OneETF_mx=np.insert(arr=OneETF_mx, obj=0, values=zero_m, axis=0)
+        for index in range(day_frame,len(OneETFdf)-pred_days+1):
             OneETFFrameData.append(OneETF_mx[index:index+pred_days,5]) #"No","Date","Name","Open","High","Low","Close","Volume"     
         OneETFFrameData=np.array(OneETFFrameData)
         OneETFFrameData=np.reshape(OneETFFrameData,(OneETFFrameData.shape[0],OneETFFrameData.shape[1],1))
