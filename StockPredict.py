@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 def normalize(df):
     newdf=df.copy()
     min_max_scaler = preprocessing.MinMaxScaler()
-    
     newdf['Open']=min_max_scaler.fit_transform(df['Open'].values.reshape(-1,1))
     newdf['High']=min_max_scaler.fit_transform(df['High'].values.reshape(-1,1))
     newdf['Low']=min_max_scaler.fit_transform(df['Low'].values.reshape(-1,1))
@@ -46,9 +45,7 @@ def data_helper(tsharepdf,tetfpdf,day_frame):
         for index in range(data_days-(day_frame+pred_days)+1):
             OneStockFrameData.append(OneStock_mx[index:index+day_frame,2:8]) #"No","Date","Name","Open","High","Low","Close","Volume"     
         OneStockFrameData=np.array(OneStockFrameData)
-        #print(OneStockFrameData)
         OneStockFrameData=np.reshape(OneStockFrameData,(OneStockFrameData.shape[0],OneStockFrameData.shape[1],number_features))
-        #print(OneStockFrameData.shape)
         
         number_train=round(0.5*OneStockFrameData.shape[0])
 
@@ -135,19 +132,16 @@ def TestGroup(dfs):
 # Main entry point
 #
 def main(argv=None):
-    tsharepdf=pd.read_csv('tsharepEnTitle.csv',encoding = 'big5',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  #nrows=100000,,verbose=True
-    tetfpdf=pd.read_csv('tetfpEnTitle.csv',encoding = 'big5',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  
+    tsharepdf=pd.read_csv('tsharepEnTitle.csv',encoding = 'big5',thousands=',',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  #nrows=100000,,verbose=True
+    tetfpdf=pd.read_csv('tetfpEnTitle.csv',encoding = 'big5',thousands=',',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  
     
-    '''
+    
     tsharepdf_norm=normalize(tsharepdf)
     tetfpdf_norm=normalize(tetfpdf)
-    '''
+    
     
     x_train, y_train, x_test, y_test = data_helper(tsharepdf,tetfpdf, 20)
-    
-    for dd in y_test:
-        if dd.shape!=(642,20,5):
-            print(dd.shape)
+        
     
     ''' 
     model=build_model(20,5)
