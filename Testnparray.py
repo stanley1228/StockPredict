@@ -19,6 +19,7 @@ import numpy as np
 # 
 # x_train=np.reshape(x_train,(x_train.shape[0],x_train.shape[1],number_features))
 # print(x_train)
+from pandas.compat import lmap
 
 '''insert row test'''
 a=np.array([[690, 20170331, 19.95, 19.9, 19.91, '      2,891'],
@@ -65,3 +66,56 @@ print('======contatenate multi once======')
 x_train_np_matrix=np.concatenate(train_list,axis=1)
 print(x_train_np_matrix.shape)
 print(x_train_np_matrix)
+
+print('======5x1 to 1 dimenesion======')    
+mb=np.array([[31],
+            [32],
+            [33],
+            [34],
+            [35]])
+
+print(mb.shape)
+print(mb)
+mb=mb.reshape(-1)
+print(mb.shape)
+print(mb)
+
+print('======insert dimenesion======')    
+mc=mb
+mc=np.insert(mc,0,mb,0)
+print(mc)
+print(mc.shape)
+
+print('======append======')   
+mb=np.array([[31],
+            [32],
+            [33],
+            [34],
+            [35]])
+
+mc=np.array([[10],
+            [20],
+            [30],
+            [40],
+            [50]])
+
+#mb=np.append(mb.reshape(-1),mc.reshape(-1),0)
+
+#mb=np.append(mb.transpose(),mc.transpose(),0)
+ma=[]
+ma.append(mb.reshape(-1))
+ma.append(mc.reshape(-1))
+print(ma)
+ma=np.array(ma)
+
+print(ma.shape)
+print(ma)
+
+print('======lm======')   
+lm=[]
+lm.append(ma)
+lm.append(ma)
+print(lm)
+
+lm=np.concatenate(lm,axis=1)
+print(lm)
