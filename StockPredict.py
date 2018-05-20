@@ -55,7 +55,16 @@ def data_helper(tsharepdf,tetfpdf,day_frame):
         
         #x test data
         x_test_list.append(OneStockFrameData[int(number_train):])
-       
+    
+    x_train_np_matrix=np.concatenate(x_train_list,axis=2)
+    print(x_train_np_matrix.shape)
+    x_train_np_matrix.tofile('x_train_np_matrix.dat')
+    
+    x_test_np_matrix=np.concatenate(x_test_list,axis=2) 
+    print(x_test_np_matrix.shape)
+    x_test_np_matrix.tofile('x_test_np_matrix.dat')
+    
+    
     '''ETF''' 
     ETFGroup=tetfpdf.groupby('No')
     
@@ -82,6 +91,14 @@ def data_helper(tsharepdf,tetfpdf,day_frame):
       
         #y test data
         y_test_list.append(OneETFFrameData[int(number_train):])
+
+    y_train_np_matrix=np.concatenate(y_train_list,axis=1)
+    print(y_train_np_matrix.shape)
+    y_train_np_matrix.tofile('y_train_np_matrix.dat')
+   
+    y_test_np_matrix=np.concatenate(y_test_list,axis=1)
+    print(y_test_np_matrix.shape)
+    y_test_np_matrix.tofile('y_test_np_matrix.dat')
 
    
     return [x_train_list, y_train_list, x_test_list, y_test_list]
@@ -194,8 +211,8 @@ def TestGroup(dfs):
 # Main entry point
 #
 def main(argv=None):
-#     tsharepdf=pd.read_csv('tsharepEnTitle.csv',encoding = 'big5',thousands=',',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  #nrows=100000,,verbose=True
-#     tetfpdf=pd.read_csv('tetfpEnTitle.csv',encoding = 'big5',thousands=',',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  
+    tsharepdf=pd.read_csv('tsharepEnTitle.csv',encoding = 'big5',thousands=',',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  #nrows=100000,,verbose=True
+    tetfpdf=pd.read_csv('tetfpEnTitle.csv',encoding = 'big5',thousands=',',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  
 #     
 #     
 #     tsharepdf_norm=normalize(tsharepdf)
