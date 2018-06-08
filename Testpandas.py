@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-
+import datetime
 tsharepdf=pd.read_csv('tsharepTest.csv',encoding = 'big5',thousands=',',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  #nrows=100000,,verbose=True
 
 tsharepdf['Date'] = pd.to_datetime(tsharepdf['Date'],format='%Y%m%d') 
@@ -22,17 +22,78 @@ change to what I want shape
 '''
 tsharepdf=pd.read_csv('tsharepTest.csv',encoding = 'big5',thousands=',',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  #nrows=100000,,verbose=True
 tsharepdf['Date'] = pd.to_datetime(tsharepdf['Date'],format='%Y%m%d') 
+print('=====Original=====')
+print(tsharepdf)
 
+print('=====pivoted=====')
 pivoted=tsharepdf.pivot(index='Date', columns='No', values=["Open","High","Low","Close","Volume"])
 print(pivoted)
 
-stacked=pivoted.stack(level=0)
+
+print('=====forward fill na =====')
+fill_pad_lim1=pivoted.fillna(method='pad',limit=3)
+print(fill_pad_lim1)
+
+print('=====fill zero in head=====')
+fill_zero_in_head=fill_pad_lim1.fillna(0)
+print(fill_zero_in_head)
+
+print('=====backward fill na =====')
+fill_pad_lim1=pivoted.fillna(method='bfill',limit=1)
+print(fill_pad_lim1)
+
+print('=====stacked level0=====')
+stacked=fill_zero_in_head.stack(level=0)
 print(stacked)
 
+print('=====unstacked=====')
 unstacked=stacked.unstack()
 print(unstacked)
 
 
+print('=====stacked level1=====')
+stacked=unstacked.stack(level=1)
+print(stacked)
+
+print('=====stacked ix 20130103=====')
+print(stacked.ix['20130103'])
+
+print('=====stacked loc=====')
+print(stacked.loc['20130103'])
+
+# print('=====select date range 20130102 to 20130104 =====')
+# print(stacked.loc['20130102':'20130102'+pd.DateOffset(days=4)])
+
+
+print('=====find week day of 20180608 =====')
+date=datetime.date(2018,6,8)
+print(date.isoweekday())
+
+print('=====find date of 20180608+2days =====')
+date=datetime.date(2018,6,8)
+date=date+datetime.timedelta(days=2)
+print(date)
+
+print('=====stacked loc by datetime =====')
+date=datetime.date(2013,1,3)
+print(date)
+print(stacked.loc[date])
+
+
+print('=====unstacked loc 20130102 to 20130105=====')
+date_start=datetime.date(2013,1,3)
+date_end=date_start+datetime.timedelta(days=1)
+print(date_start)
+print(date_end)
+print(unstacked.loc[date_start:date_end])
+
+print('=====unstacked loc 20130102 to 20130105 to matrix=====')
+date_start=datetime.date(2013,1,3)
+date_end=date_start+datetime.timedelta(days=1)
+print(date_start)
+print(date_end)
+print(unstacked.loc[date_start:date_end].as_matrix())
+print(unstacked.loc[date_start:date_end].as_matrix().shape)
 # print(pivoted)
 # print(tsharepdf)
 # 

@@ -7,6 +7,7 @@ from keras.layers.core import Dense,Dropout,Activation
 from keras.layers.recurrent  import LSTM
 from keras.models import Model,load_model
 import matplotlib.pyplot as plt 
+import datetime
 
 def normalize(df):
     newdf=df.copy()
@@ -237,13 +238,59 @@ def TrainProcess():
     #close.plot()
     #plt.plot(close)
     #plt.show()
+
+def TrainProcess2(tsharepdf,tetfpdf,day_frame):
+    tsharepdf=pd.read_csv('tsharepEnTitle.csv',encoding = 'big5',thousands=',',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  #nrows=100000,,verbose=True
+    tetfpdf=pd.read_csv('tetfpEnTitle.csv',encoding = 'big5',thousands=',',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  
+        
+    tsharepdf['Date'] = pd.to_datetime(tsharepdf['Date'],format='%Y%m%d') 
+    tetfpdf['Date']=pd.to_datetime(tetfpdf['Date'],format='%Y%m%d')
+    
+    print('=====pivoted=====')
+    tsharepdf_pivoted=tsharepdf.pivot(index='Date', columns='No', values=["Open","High","Low","Close","Volume"])
+    tetfpdf_pivoted=tetfpdf.pivot(index='Date', columns='No', values=["Open","High","Low","Close","Volume"])
+    
+    print('=====forward fill na =====')
+    tsharepdf_fill_pad=tsharepdf_pivoted.fillna(method='pad')
+    tetfpdf_fill_pad=tetfpdf_pivoted.fillna(method='pad')
+    
+    print('=====fill zero in head=====')
+    tsharepdf_zero_head=tsharepdf_fill_pad.fillna(0)
+    tetfpdf_zero_head=tetfpdf_fill_pad.fillna(0)
+    
+    print('=====stacked level0=====')
+    tsharepdf_stacked=tsharepdf_zero_head.stack(level=0)
+    tetfpdf_stacked=tetfpdf_zero_head.stack(level=0)
+    
+    print('=====unstacked=====')
+    tsharepdf_unstacked=tsharepdf_stacked.unstack()
+    tetfpdf_unstacked=tetfpdf_zero_head.unstack()
+    
+    
+    print('=====choose every week=====')
+    date_start=tsharepdf_unstacked.loc['20130107'] #monday
+    date_end=date_start+datetime.timedelta(days=day_frame-1) #friday day_frame
+    
+    x_train=[]
+    y_train=[]
+    while len>10:
+        x_train=tsharepdf_unstacked.loc[date_start:date_end].as_matrix()
+        y_train=tetfpdf_unstacked.loc[date_start:date_end].as_matrix()
+        
+        date_start=date_start+datetime.timedelta(days=7)
+        date_end=date_start+datetime.timedelta(days=day_frame-1) #friday day_frame
+        
+       
+    
+    
+   
 def CompareList(list1,list2):
     result=[1 if b>a else 0 if a==b else -1 for a,b in zip(list1,list2)]
     return result
 
 def GenerateDataForRealTest(day_frame):
-    tsharepdf=pd.read_csv('tsharepEnTitle.csv',encoding = 'big5',thousands=',',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  #nrows=100000,,verbose=True
-    tetfpdf=pd.read_csv('tetfpEnTitle.csv',encoding = 'big5',thousands=',',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  
+    tsharepdf=pd.read_csv('tsharepEnTitle20180601.csv',encoding = 'big5',thousands=',',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  #nrows=100000,,verbose=True
+    tetfpdf=pd.read_csv('tetfpEnTitle20180601.csv',encoding = 'big5',thousands=',',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  
  
     tsharepdf_norm=normalize(tsharepdf)
     number_features=5
