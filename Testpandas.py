@@ -16,6 +16,8 @@ tsharepdf['Date'] = pd.to_datetime(tsharepdf['Date'],format='%Y%m%d')
 # pivoted = pd.pivot_table(tsharepdf,columns=['No'],index=['Date'],values=["Open","High","Low","Close","Volume"])
 # stacked=tsharepdf.stack('No')
 
+pd.set_option('display.expand_frame_repr', False)
+pd.set_option('max_rows', 1000)
 
 '''
 change to what I want shape
@@ -26,7 +28,9 @@ print('=====Original=====')
 print(tsharepdf)
 
 print('=====pivoted=====')
-pivoted=tsharepdf.pivot(index='Date', columns='No', values=["Open","High","Low","Close","Volume"])
+pivoted=tsharepdf.pivot(index='Date', columns='No', values=["Close","High","Low","Open","Volume"])
+# problem occur when stack level0 the sequence wrong
+# pivoted=tsharepdf.pivot(index='Date', columns='No', values=["Open","High","Low","Close","Volume"])
 print(pivoted)
 
 
@@ -38,13 +42,14 @@ print('=====fill zero in head=====')
 fill_zero_in_head=fill_pad_lim1.fillna(0)
 print(fill_zero_in_head)
 
-print('=====backward fill na =====')
-fill_pad_lim1=pivoted.fillna(method='bfill',limit=1)
-print(fill_pad_lim1)
+# print('=====backward fill na =====')
+# fill_pad_lim1=pivoted.fillna(method='bfill',limit=1)
+# print(fill_pad_lim1)
 
 print('=====stacked level0=====')
 stacked=fill_zero_in_head.stack(level=0)
 print(stacked)
+
 
 print('=====unstacked=====')
 unstacked=stacked.unstack()
@@ -79,10 +84,29 @@ date=datetime.date(2013,1,3)
 print(date)
 print(stacked.loc[date])
 
+print('=====date compare=====')
+date1=datetime.date(2013,1,4)
+date2=datetime.date(2013,1,6)
+if date1 > date2:
+    print('date1 > date2')
+elif date1 < date2:
+    print('date1 < date2')
+else:
+    print('date1 = date2')
+    
+print('=====is date in data=====')    
+date1=datetime.date(2013,1,4)
+
+if date1 in stacked.index:
+    print("{0} is in data".format(date1))
+else:
+    print("{0} is not in data".format(date1))
+    
+
 
 print('=====unstacked loc 20130102 to 20130105=====')
 date_start=datetime.date(2013,1,3)
-date_end=date_start+datetime.timedelta(days=1)
+date_end=date_start+datetime.timedelta(days=8)
 print(date_start)
 print(date_end)
 print(unstacked.loc[date_start:date_end])
@@ -94,6 +118,36 @@ print(date_start)
 print(date_end)
 print(unstacked.loc[date_start:date_end].as_matrix())
 print(unstacked.loc[date_start:date_end].as_matrix().shape)
+
+print('=====pivoted just close =====')
+pivoted_jc=tsharepdf.pivot(index='Date', columns='No', values=["Close"])
+print(pivoted_jc)
+
+print('=====forward fill na just close =====')
+fill_pad_lim1_jc=pivoted_jc.fillna(method='pad',limit=3)
+print(fill_pad_lim1_jc)
+
+print('=====fill zero in head just close=====')
+fill_zero_in_head_jc=fill_pad_lim1_jc.fillna(0)
+print(fill_zero_in_head_jc)
+
+print('=====stack just close=====')
+stacked_jc=fill_zero_in_head_jc.stack(level=1)
+print(stacked_jc)
+print(stacked_jc.as_matrix().shape)
+
+
+print('=====stacked just close loc 20130102 to 20130105=====')
+date_start=datetime.date(2013,1,3)
+date_end=date_start+datetime.timedelta(days=2) #if over the level mismatch error occur
+print(date_start)
+print(date_end)
+print(stacked_jc.loc[date_start:date_end])
+
+
+# print('=====stacked just close drop raw=====')
+# stacked_jc=stacked_jc.drop(pd.to_datetime('20130104'))
+# print(stacked_jc)
 # print(pivoted)
 # print(tsharepdf)
 # 

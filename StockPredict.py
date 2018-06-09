@@ -106,6 +106,76 @@ def data_helper(tsharepdf,tetfpdf,day_frame):
     return [x_train_np_matrix, y_train_np_matrix, x_test_np_matrix, y_test_np_matrix]
 
 
+def data_helper2(tsharepdf,tetfpdf,day_frame):
+#     tsharepdf=pd.read_csv('tsharepEnTitle.csv',encoding = 'big5',thousands=',',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  #nrows=100000,,verbose=True
+#     tetfpdf=pd.read_csv('tetfpEnTitle.csv',encoding = 'big5',thousands=',',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  
+        
+    tsharepdf['Date'] = pd.to_datetime(tsharepdf['Date'],format='%Y%m%d') 
+    tetfpdf['Date']=pd.to_datetime(tetfpdf['Date'],format='%Y%m%d')
+    
+    print('=====pivoted=====')
+    tsharepdf_pivoted=tsharepdf.pivot(index='Date', columns='No', values=["Close","High","Low","Open","Volume"])
+    tetfpdf_pivoted=tetfpdf.pivot(index='Date', columns='No', values=["Close"])
+    
+    print('=====forward fill na =====')
+    tsharepdf_fill_pad=tsharepdf_pivoted.fillna(method='pad')
+    tetfpdf_fill_pad=tetfpdf_pivoted.fillna(method='pad')
+    
+    print('=====fill zero in head=====')
+    tsharepdf_zero_head=tsharepdf_fill_pad.fillna(0)
+    tetfpdf_zero_head=tetfpdf_fill_pad.fillna(0)
+    
+    print('=====stacked level0 for share=====')
+    tsharepdf_stacked=tsharepdf_zero_head.stack(level=0)
+    
+    print('=====stacked level1 for ETF=====')
+    tetfpdf_data=tetfpdf_zero_head.stack(level=1)
+    
+    print('=====unstacked for share=====')
+    tsharepdf_data=tsharepdf_stacked.unstack()
+   
+    
+    print('=====choose every week=====')
+    date_start=datetime.date(2013,1,7) #monday
+    date_end=date_start+datetime.timedelta(days=day_frame-1) #friday 
+    
+    x_data_set=[]
+    y_data_set=[]
+    last_date_in_data=datetime.date(2018,5,4)
+    while date_end < last_date_in_data:
+        if date_start in tsharepdf_data.index and date_end in tsharepdf_data.index:
+            x_data=tsharepdf_data.loc[date_start:date_end]
+            y_data=tetfpdf_data.loc[date_start:date_end]
+            
+            
+            if x_data.shape[0] == 5 and y_data.shape[0] == 90: 
+                x_data_set.append(x_data.as_matrix())
+                y_data_set.append(y_data.as_matrix().reshape(-1))
+                 
+        date_start=date_start+datetime.timedelta(days=7)
+        date_end=date_start+datetime.timedelta(days=day_frame-1) #friday day_frame
+    
+    
+    number_train=round(0.5*len(x_data_set))
+        
+    #x train data
+    x_train=x_data_set[:int(number_train)] 
+    x_train=np.array(x_train)
+            
+    #x test data
+    x_test=x_data_set[int(number_train):]
+    x_test=np.array(x_test)
+    
+    #y train data
+    y_train=y_data_set[:int(number_train)]
+    y_train=np.array(y_train)
+    
+    #y test data
+    y_test=y_data_set[int(number_train):]  
+    y_test=np.array(y_test)
+      
+    return [x_train, y_train, x_test, y_test]  
+
 def build_model(input_length,input_dim,output_dim):
     d=0.3
     model=Sequential()
@@ -239,50 +309,107 @@ def TrainProcess():
     #plt.plot(close)
     #plt.show()
 
-def TrainProcess2(tsharepdf,tetfpdf,day_frame):
+    
+def TrainProcess2():
     tsharepdf=pd.read_csv('tsharepEnTitle.csv',encoding = 'big5',thousands=',',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  #nrows=100000,,verbose=True
     tetfpdf=pd.read_csv('tetfpEnTitle.csv',encoding = 'big5',thousands=',',usecols=["No","Date","Open","High","Low","Close","Volume"],low_memory=False)  
-        
-    tsharepdf['Date'] = pd.to_datetime(tsharepdf['Date'],format='%Y%m%d') 
-    tetfpdf['Date']=pd.to_datetime(tetfpdf['Date'],format='%Y%m%d')
+#         
+#         
+    tsharepdf_norm=normalize(tsharepdf)
+    tetfpdf_norm=normalize(tetfpdf)
+#        
+    print('star data helper...')   
+    x_train, y_train, x_test, y_test = data_helper2(tsharepdf_norm,tetfpdf_norm,5)
+    print('data helper done')   
     
-    print('=====pivoted=====')
-    tsharepdf_pivoted=tsharepdf.pivot(index='Date', columns='No', values=["Open","High","Low","Close","Volume"])
-    tetfpdf_pivoted=tetfpdf.pivot(index='Date', columns='No', values=["Open","High","Low","Close","Volume"])
+    print("x_train_shape={0}".format(x_train.shape))
+    print("x_test_shape={0}".format(x_test.shape))
+    print("y_train_shape={0}".format(y_train.shape))
+    print("y_test_shape={0}".format(y_test.shape))
     
-    print('=====forward fill na =====')
-    tsharepdf_fill_pad=tsharepdf_pivoted.fillna(method='pad')
-    tetfpdf_fill_pad=tetfpdf_pivoted.fillna(method='pad')
-    
-    print('=====fill zero in head=====')
-    tsharepdf_zero_head=tsharepdf_fill_pad.fillna(0)
-    tetfpdf_zero_head=tetfpdf_fill_pad.fillna(0)
-    
-    print('=====stacked level0=====')
-    tsharepdf_stacked=tsharepdf_zero_head.stack(level=0)
-    tetfpdf_stacked=tetfpdf_zero_head.stack(level=0)
-    
-    print('=====unstacked=====')
-    tsharepdf_unstacked=tsharepdf_stacked.unstack()
-    tetfpdf_unstacked=tetfpdf_zero_head.unstack()
+#     print(x_train)
+#     print(y_train)
     
     
-    print('=====choose every week=====')
-    date_start=tsharepdf_unstacked.loc['20130107'] #monday
-    date_end=date_start+datetime.timedelta(days=day_frame-1) #friday day_frame
+#     d=np.load('train_test_data.npz')
+#     x_train=d['arr_0']
+#     print(x_train.shape)
+#     x_test=d['arr_1']
+#     print(x_test.shape)
+#     y_train=d['arr_2']
+#     print(y_train.shape)
+#     y_test=d['arr_3']
+#     print(y_test.shape)
+#       
+    '''train model'''
+    print('fit...',end='')   
+    model=build_model(5,x_train[0].shape[1],y_train[0].shape[0])
+    model.fit(x_train, y_train, batch_size=128,epochs=50,validation_split=0.1,verbose=1)
+    print('done')
     
-    x_train=[]
-    y_train=[]
-    while len>10:
-        x_train=tsharepdf_unstacked.loc[date_start:date_end].as_matrix()
-        y_train=tetfpdf_unstacked.loc[date_start:date_end].as_matrix()
-        
-        date_start=date_start+datetime.timedelta(days=7)
-        date_end=date_start+datetime.timedelta(days=day_frame-1) #friday day_frame
-        
-       
+#    '''load model'''
+#     print('load stock_model_adjust_date_batch128.h5...')
+#     model = load_model('stock_model_adjust_date_batch128.h5')
+#     print('load stock_model_adjust_date_batch128.h5...Done')
     
+    model.save('stock_model_adjust_date_batch128.h5')
+    print('model.save')
+
+   
+    pred_y_train=model.predict(x_train)
+    print('predict done')
+     
+    denorm_pred_y_train=denormalize(tetfpdf,pred_y_train)
+    denorm_y_train=denormalize(tetfpdf,y_train)
+    print(denorm_y_train.shape)
+ 
+    denorm_y_train=np.reshape(denorm_y_train,(y_train.shape[0],-1,5))
+    denorm_pred_y_train=np.reshape(denorm_pred_y_train,(y_train.shape[0],-1,5))
+    print(denorm_y_train.shape)
+     
+    pred_y_test=model.predict(x_test)
+    denorm_pred_y_test=denormalize(tetfpdf,pred_y_test)
+    denorm_y_test=denormalize(tetfpdf,y_test)
+    denorm_pred_y_test=np.reshape(denorm_pred_y_test,(y_test.shape[0],-1,5))
+    denorm_y_test=np.reshape(denorm_y_test,(y_test.shape[0],-1,5))
+     
     
+    '''
+    show train data result
+    '''
+    '''plot by day'''
+    plt.figure()
+    plt.plot(denorm_pred_y_train[:,:,0],color='red',label='Prediction')
+    plt.plot(denorm_y_train[:,:,0],color='blue',label='Answer')
+    plt.title('train result predict next 1 day')
+    '''plot by company'''
+    plt.figure()
+    plt.plot(denorm_pred_y_train[:,0,:],color='red',label='Prediction')
+    plt.plot(denorm_y_train[:,0,:],color='blue',label='Answer')
+    plt.title('train result predict y train on of 1th company')
+    plt.legend(loc='best')
+     
+    '''
+    show test data result
+    '''
+    '''plot by day'''
+    plt.figure()
+    plt.plot(denorm_pred_y_test[:,:,0],color='red',label='Prediction')
+    plt.plot(denorm_y_test[:,:,0],color='blue',label='Answer')
+    plt.title('test result predict next 1 day')
+    '''plot by company'''
+    plt.figure()
+    plt.plot(denorm_pred_y_test[:,1,:],color='red',label='Prediction')
+    plt.plot(denorm_y_test[:,1,:],color='blue',label='Answer')
+    plt.title('test result predict y test of 1th company')
+    plt.legend(loc='best')
+    plt.show()
+     
+    #print(tsmcdf_norm)
+    #close=tsmcdf['Close']
+    #close.plot()
+    #plt.plot(close)
+    #plt.show()    
    
 def CompareList(list1,list2):
     result=[1 if b>a else 0 if a==b else -1 for a,b in zip(list1,list2)]
@@ -413,9 +540,9 @@ def GenerateDataForRealTest(day_frame):
 #
 def main(argv=None):
     #Testpandas()
-#     TrainProcess()
+    TrainProcess2()
     
-    GenerateDataForRealTest(20)
+#     GenerateDataForRealTest(20)
   
 
 if __name__ == '__main__':
