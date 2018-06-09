@@ -88,6 +88,7 @@ def data_helper(tsharepdf,tetfpdf,day_frame):
         #y train data
         y_train_list.append(OneETFFrameData[:int(number_train)])                           
       
+        print(y_train_list)
         #y test data
         y_test_list.append(OneETFFrameData[int(number_train):])
 
@@ -134,29 +135,33 @@ def data_helper2(tsharepdf,tetfpdf,day_frame):
     print('=====unstacked for share=====')
     tsharepdf_data=tsharepdf_stacked.unstack()
    
-    
     print('=====choose every week=====')
-    date_start=datetime.date(2013,1,7) #monday
-    date_end=date_start+datetime.timedelta(days=day_frame-1) #friday 
+    x_date_start=datetime.date(2013,1,7) #monday
+    x_date_end=x_date_start+datetime.timedelta(days=day_frame-1) #friday 
+    
+    y_date_start=x_date_start+datetime.timedelta(days=7)
+    y_date_end=x_date_end+datetime.timedelta(days=7)
     
     x_data_set=[]
     y_data_set=[]
     last_date_in_data=datetime.date(2018,5,4)
-    while date_end < last_date_in_data:
-        if date_start in tsharepdf_data.index and date_end in tsharepdf_data.index:
-            x_data=tsharepdf_data.loc[date_start:date_end]
-            y_data=tetfpdf_data.loc[date_start:date_end]
-            
+    while y_date_end < last_date_in_data:
+        if x_date_start in tsharepdf_data.index and x_date_end in tsharepdf_data.index and y_date_start in tsharepdf_data.index and y_date_end in tsharepdf_data.index:
+            x_data=tsharepdf_data.loc[x_date_start:x_date_end]
+            y_data=tetfpdf_data.loc[y_date_start:y_date_end].reset_index().pivot(index='No', columns='Date', values=["Close"]).stack()
             
             if x_data.shape[0] == 5 and y_data.shape[0] == 90: 
                 x_data_set.append(x_data.as_matrix())
                 y_data_set.append(y_data.as_matrix().reshape(-1))
                  
-        date_start=date_start+datetime.timedelta(days=7)
-        date_end=date_start+datetime.timedelta(days=day_frame-1) #friday day_frame
+        x_date_start=x_date_start+datetime.timedelta(days=7)
+        x_date_end=x_date_start+datetime.timedelta(days=day_frame-1) #friday day_frame
+        
+        y_date_start=x_date_start+datetime.timedelta(days=7)
+        y_date_end=x_date_end+datetime.timedelta(days=7)
     
-    
-    number_train=round(0.5*len(x_data_set))
+
+    number_train=round(0.1*len(x_data_set))
         
     #x train data
     x_train=x_data_set[:int(number_train)] 
@@ -169,6 +174,7 @@ def data_helper2(tsharepdf,tetfpdf,day_frame):
     #y train data
     y_train=y_data_set[:int(number_train)]
     y_train=np.array(y_train)
+    
     
     #y test data
     y_test=y_data_set[int(number_train):]  
@@ -239,6 +245,8 @@ def TrainProcess():
     print(y_train.shape)
     y_test=d['arr_3']
     print(y_test.shape)
+    
+    print(y_train)
       
     '''train model'''
 #     model=build_model(20,x_train.shape[2],y_train.shape[1])
@@ -319,7 +327,7 @@ def TrainProcess2():
     tetfpdf_norm=normalize(tetfpdf)
 #        
     print('star data helper...')   
-    x_train, y_train, x_test, y_test = data_helper2(tsharepdf_norm,tetfpdf_norm,5)
+    x_train, y_train, x_test, y_test = data_helper2(tsharepdf,tetfpdf,5)
     print('data helper done')   
     
     print("x_train_shape={0}".format(x_train.shape))
@@ -327,6 +335,9 @@ def TrainProcess2():
     print("y_train_shape={0}".format(y_train.shape))
     print("y_test_shape={0}".format(y_test.shape))
     
+    
+    print(x_train)
+    return
 #     print(x_train)
 #     print(y_train)
     
@@ -343,17 +354,18 @@ def TrainProcess2():
 #       
     '''train model'''
     print('fit...',end='')   
-    model=build_model(5,x_train[0].shape[1],y_train[0].shape[0])
+    model=build_model(5,x_train.shape[2],y_train.shape[1])
     model.fit(x_train, y_train, batch_size=128,epochs=50,validation_split=0.1,verbose=1)
     print('done')
     
-#    '''load model'''
+    '''load model'''
 #     print('load stock_model_adjust_date_batch128.h5...')
 #     model = load_model('stock_model_adjust_date_batch128.h5')
 #     print('load stock_model_adjust_date_batch128.h5...Done')
     
+    print('model save',end='')
     model.save('stock_model_adjust_date_batch128.h5')
-    print('model.save')
+    print('done')
 
    
     pred_y_train=model.predict(x_train)
@@ -366,7 +378,7 @@ def TrainProcess2():
     denorm_y_train=np.reshape(denorm_y_train,(y_train.shape[0],-1,5))
     denorm_pred_y_train=np.reshape(denorm_pred_y_train,(y_train.shape[0],-1,5))
     print(denorm_y_train.shape)
-     
+    
     pred_y_test=model.predict(x_test)
     denorm_pred_y_test=denormalize(tetfpdf,pred_y_test)
     denorm_y_test=denormalize(tetfpdf,y_test)
